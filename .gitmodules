@@ -1,0 +1,18 @@
+[submodule "qutas_lab_450"]
+	path = qutas_lab_450
+	url = https://github.com/GilderCodes/qutas_lab_450.git
+[submodule "egh450_payload"]
+	path = egh450_payload
+	url = https://github.com/GilderCodes/egh450_payload.git
+[submodule "operator_interfaces"]
+	path = operator_interfaces
+	url = https://github.com/GilderCodes/operator_interfaces.git
+[submodule "breadcrumb"]
+	path = breadcrumb
+	url = https://github.com/GilderCodes/breadcrumb.git
+[submodule "spar"]
+	path = spar
+	url = https://github.com/GilderCodes/spar.git
+[submodule "depthai_publisher"]
+	path = depthai_publisher
+	url = https://github.com/GilderCodes/depthai_publisher.git
