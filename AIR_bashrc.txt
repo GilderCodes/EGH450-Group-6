@@ -1,0 +1,388 @@
+# ~/.bashrc: executed by bash(1) for non-login shells.
+# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
+# for examples
+
+# If not running interactively, don't do anything
+case $- in
+    *i*) ;;
+      *) return;;
+esac
+
+# don't put duplicate lines or lines starting with space in the history.
+# See bash(1) for more options
+HISTCONTROL=ignoreboth
+
+# append to the history file, don't overwrite it
+shopt -s histappend
+
+# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+HISTSIZE=1000
+HISTFILESIZE=2000
+
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
+
+# If set, the pattern "**" used in a pathname expansion context will
+# match all files and zero or more directories and subdirectories.
+#shopt -s globstar
+
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# set variable identifying the chroot you work in (used in the prompt below)
+if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
+    debian_chroot=$(cat /etc/debian_chroot)
+fi
+
+# set a fancy prompt (non-color, unless we know we "want" color)
+case "$TERM" in
+    xterm-color|*-256color) color_prompt=yes;;
+esac
+
+# uncomment for a colored prompt, if the terminal has the capability; turned
+# off by default to not distract the user: the focus in a terminal window
+# should be on the output of commands, not on the prompt
+#force_color_prompt=yes
+
+if [ -n "$force_color_prompt" ]; then
+    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+	# We have color support; assume it's compliant with Ecma-48
+	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+	# a case would tend to support setf rather than setaf.)
+	color_prompt=yes
+    else
+	color_prompt=
+    fi
+fi
+
+if [ "$color_prompt" = yes ]; then
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+else
+    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+fi
+unset color_prompt force_color_prompt
+
+# If this is an xterm set the title to user@host:dir
+case "$TERM" in
+xterm*|rxvt*)
+    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+    ;;
+*)
+    ;;
+esac
+
+# enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    #alias dir='dir --color=auto'
+    #alias vdir='vdir --color=auto'
+
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+
+# colored GCC warnings and errors
+#export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
+
+# some more ls aliases
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+
+# Add an "alert" alias for long running commands.  Use like so:
+#   sleep 10; alert
+alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
+
+# Alias definitions.
+# You may want to put all your additions into a separate file like
+# ~/.bash_aliases, instead of adding them here directly.
+# See /usr/share/doc/bash-doc/examples in the bash-doc package.
+
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+if ! shopt -oq posix; then
+  if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
+  elif [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+  fi
+fi
+
+
+
+# Here EGB349 bash.rc tools nice to have in every new terminal
+
+source /opt/ros/noetic/setup.bash # Sorce ros code, so the terminal knows where ROS is installed
+catkin_ws_name="catkin_ws"   # Name of the worspace, used as a variable later as ${catkin_ws_name}
+
+source ~/${catkin_ws_name}/devel/setup.bash    # Load the packages in the workspace, so the terminal session is aware of them and can find them with double tab. tab tab is the friend of your memory!
+
+# disros definition so we dont need to worrie about ros ip manual setting. 
+disros() {
+  # Setup for distributed ROS
+  export ROS_IP="$(hostname -I | cut -d' ' -f1)"
+  echo "Identifying as: $ROS_IP"
+ 
+  if [ "$#" -eq 1 ]
+  then
+    export ROS_MASTER_URI="http://$1:11311"
+    echo "Connecting to: $ROS_MASTER_URI"
+  fi
+}
+ 
+# We run disros so each terminal knows by default it is on the master, (we can add the ip of the master if we are running this from GCS: disros 192.zzz.abc.123 )
+disros
+
+# Activate multiple terminals using the powerfull tmux, so a single terminal can do marbels!
+# There is a safety feature build-in that cause a "file not foud" error on the control.lauch, check the path (missing ~ at start), this file will connect UAV and Onboard computer, so be carefull. 
+function run349 (){
+  echo "Starting Tmux session for EGB349 UAV control"
+  sleep 2
+  tmux new-session -s drone6\; set -g mouse on\; send-keys "roslaunch qutas_lab_450 environment.launch" C-m\; split-window -h -p 50\; select-pane -t 0\; split-window -v -p 66\; \
+  send-keys "sleep 5; roslaunch ~/${catkin_ws_name}/launch/control.launch" C-m\; select-pane -t 2\; \
+  send-keys "sleep 10; rosrun depthai_publisher dai_publisher" C-m\; select-pane -t 3\; split-window -v -p 50\; \
+  send-keys "sleep 5; rosrun depthai_publisher aruco_subscriber" C-m\; select-pane -t 4\; \
+  send-keys "sleep 10; " C-m\; select-pane -t 1\; split-window -v -p 50\; \
+  send-keys "" C-m\; select-pane -t 5\; \
+  send-keys "tmux kill-session" \;
+}
+
+export -f run349
+
+function mission2() {
+    echo "Launching Mission 2 - Search for Drone and Phone"
+    sleep 2
+    
+    # Create a new tmux session named 'drone'
+    tmux new-session -d -s drone
+
+    tmux set-option -t drone -g mouse on
+    
+    # Create Horizontal Panes
+    tmux split-window -h -t drone:0
+    tmux select-pane -t drone:0.1
+    tmux split-window -h -t drone:0
+    tmux select-pane -t drone:0.2
+    tmux split-window -h -t drone:0
+
+    # Split Vertical in each column
+    tmux select-pane -t drone:0.0
+    tmux split-window -v -t drone:0
+    tmux split-window -v -t drone:0
+
+    tmux select-pane -t drone:0.3
+    tmux split-window -v -t drone:0
+    tmux split-window -v -t drone:0
+
+    tmux select-pane -t drone:0.6
+    tmux split-window -v -t drone:0
+    tmux split-window -v -t drone:0
+
+    tmux select-pane -t drone:0.9
+    tmux split-window -v -t drone:0
+    tmux split-window -v -t drone:0
+
+    # Let the Terminal's Populate
+    sleep 2
+
+    # Select the Panes and Send Keys
+    tmux select-pane -t drone:0.0
+    tmux send-keys "roscore" Enter
+
+    tmux select-pane -t drone:0.1
+    tmux send-keys "sleep 10 && roslaunch ~/${catkin_ws_name}/launch/control.launch" Enter
+
+    tmux select-pane -t drone:0.2
+    tmux send-keys "sleep 15 && roslaunch qutas_lab_450 environment.launch" Enter
+
+    tmux select-pane -t drone:0.3
+    tmux send-keys "sleep 15 && roslaunch breadcrumb breadcrumb.launch" Enter
+
+    tmux select-pane -t drone:0.4
+    tmux send-keys "sleep 5 && roslaunch depthai_publisher mission2.launch" Enter
+
+    tmux select-pane -t drone:0.5
+    tmux send-keys "sleep 15 && rosrun spar_node tf2_broadcaster_frames" Enter
+
+    tmux select-pane -t drone:0.7
+    tmux send-keys "sleep 15 && rosrun spar_node tf2_listener" Enter
+
+    tmux select-pane -t drone:0.8
+    tmux send-keys "sleep 15 && rosrun egh450_payload drop_payload.py" Enter
+
+    tmux select-pane -t drone:0.6
+    tmux send-keys "sleep 10 && rosrun depthai_publisher pose_estimation" Enter
+
+    tmux select-pane -t drone:0.9
+    tmux send-keys "sleep 20 && rosrun spar_node battery_warning_publisher" Enter
+
+    tmux select-pane -t drone:0.11
+    tmux send-keys "tmux kill-session"
+
+    # Attach to the session
+    tmux attach-session -t drone
+}
+
+export -f mission2
+
+
+function mission1() {
+    echo "Launching Mission 1 - Search for Human and Backpack"
+    sleep 2
+    
+    # Create a new tmux session named 'drone'
+    tmux new-session -d -s drone
+
+    tmux set-option -t drone -g mouse on
+    
+    # Create Horizontal Panes
+    tmux split-window -h -t drone:0
+    tmux select-pane -t drone:0.1
+    tmux split-window -h -t drone:0
+    tmux select-pane -t drone:0.2
+    tmux split-window -h -t drone:0
+
+    # Split Vertical in each column
+    tmux select-pane -t drone:0.0
+    tmux split-window -v -t drone:0
+    tmux split-window -v -t drone:0
+
+    tmux select-pane -t drone:0.3
+    tmux split-window -v -t drone:0
+    tmux split-window -v -t drone:0
+
+    tmux select-pane -t drone:0.6
+    tmux split-window -v -t drone:0
+    tmux split-window -v -t drone:0
+
+    tmux select-pane -t drone:0.9
+    tmux split-window -v -t drone:0
+    tmux split-window -v -t drone:0
+
+    # Let the Terminal's Populate
+    sleep 2
+
+    # Select the Panes and Send Keys
+    tmux select-pane -t drone:0.0
+    tmux send-keys "roscore" Enter
+
+    tmux select-pane -t drone:0.1
+    tmux send-keys "sleep 10 && roslaunch ~/${catkin_ws_name}/launch/control.launch" Enter
+
+    tmux select-pane -t drone:0.2
+    tmux send-keys "sleep 15 && roslaunch qutas_lab_450 environment.launch" Enter
+
+    tmux select-pane -t drone:0.3
+    tmux send-keys "sleep 15 && roslaunch breadcrumb breadcrumb.launch" Enter
+
+    tmux select-pane -t drone:0.4
+    tmux send-keys "sleep 5 && roslaunch depthai_publisher mission1.launch" Enter
+
+    tmux select-pane -t drone:0.5
+    tmux send-keys "sleep 15 && rosrun spar_node tf2_broadcaster_frames" Enter
+
+    tmux select-pane -t drone:0.7
+    tmux send-keys "sleep 15 && rosrun spar_node tf2_listener" Enter
+
+    tmux select-pane -t drone:0.8
+    tmux send-keys "sleep 15 && rosrun egh450_payload drop_payload.py" Enter
+
+    tmux select-pane -t drone:0.6
+    tmux send-keys "sleep 10 && rosrun depthai_publisher pose_estimation" Enter
+
+    tmux select-pane -t drone:0.9
+    tmux send-keys "sleep 20 && rosrun spar_node battery_warning_publisher" Enter
+
+    tmux select-pane -t drone:0.11
+    tmux send-keys "tmux kill-session"
+
+    # Attach to the session
+    tmux attach-session -t drone
+}
+
+export -f mission1
+
+function simulator() {
+    echo "Launching Simulator"
+    sleep 2
+    
+    # Create a new tmux session named 'drone'
+    tmux new-session -d -s drone
+
+    tmux set-option -t drone -g mouse on
+    
+    # Create Horizontal Panes
+    tmux split-window -h -t drone:0
+    tmux select-pane -t drone:0.1
+    tmux split-window -h -t drone:0
+    tmux select-pane -t drone:0.2
+    tmux split-window -h -t drone:0
+
+    # Split Vertical in each column
+    tmux select-pane -t drone:0.0
+    tmux split-window -v -t drone:0
+    tmux split-window -v -t drone:0
+
+    tmux select-pane -t drone:0.3
+    tmux split-window -v -t drone:0
+    tmux split-window -v -t drone:0
+
+    tmux select-pane -t drone:0.6
+    tmux split-window -v -t drone:0
+    tmux split-window -v -t drone:0
+
+    tmux select-pane -t drone:0.9
+    tmux split-window -v -t drone:0
+    tmux split-window -v -t drone:0
+
+    # Let the Terminal's Populate
+    sleep 2
+
+    # Select the Panes and Send Keys
+    tmux select-pane -t drone:0.0
+    tmux send-keys "roscore" Enter
+
+    tmux select-pane -t drone:0.1
+    tmux send-keys "sleep 10 && roslaunch qutas_lab_450 environment.launch" Enter
+
+    tmux select-pane -t drone:0.2
+    tmux send-keys "sleep 10 && roslaunch breadcrumb breadcrumb.launch" Enter
+
+    tmux select-pane -t drone:0.3
+    tmux send-keys "sleep 10 && roslaunch spar_node spar_uavasr.launch" Enter
+
+    tmux select-pane -t drone:0.4
+    tmux send-keys "sleep 10 && rosrun spar_node tf2_broadcaster_frames" Enter
+
+    tmux select-pane -t drone:0.5
+    tmux send-keys "sleep 10 && rosrun spar_node tf2_listener" Enter
+
+    tmux select-pane -t drone:0.6
+    tmux send-keys "sleep 15 && roslaunch spar_node simulatorrviz.launch" Enter
+
+    tmux select-pane -t drone:0.7
+    tmux send-keys "sleep 15 && roslaunch depthai_publisher mission1.launch" Enter
+
+    tmux select-pane -t drone:0.8
+    tmux send-keys "sleep 15 && rosrun depthai_publisher pose_estimation" Enter
+
+    tmux select-pane -t drone:0.9
+    tmux send-keys "roslaunch spar_node demo_wp_roi.launch"
+
+    tmux select-pane -t drone:0.11
+    tmux send-keys "tmux kill-session"
+
+    tmux select-pane -t drone:0.7
+    # Attach to the session
+    tmux attach-session -t drone
+}
+
+export -f simulator
